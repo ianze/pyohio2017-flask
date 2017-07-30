@@ -1,0 +1,838 @@
+<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+    <title>reveal.js</title>
+
+    <link rel="stylesheet" href="css/reveal.css">
+    <link rel="stylesheet" href="css/theme/sky.css">
+
+    <!-- Theme used for syntax highlighting of code -->
+    <link rel="stylesheet" href="lib/css/zenburn.css">
+    <style>
+        #left {
+            left: -8.33%;
+            text-align: left;
+            float: left;
+            width: 40%;
+            z-index: -10;
+        }
+
+        #right {
+            left: -10%;
+            top: 75px;
+            float: right;
+            text-align: right;
+            z-index: -10;
+            width: 40%;
+        }
+
+        .reveal pre code {
+            font-size: 1.5em;
+            line-height: 1.3;
+        }
+
+        .reveal pre {
+            width: 120%;
+            margin-left: -10%;
+        }
+    </style>
+    <!-- Printing and PDF exports -->
+    <script>
+        var link = document.createElement('link');
+        link.rel = 'stylesheet';
+        link.type = 'text/css';
+        link.href = window.location.search.match(/print-pdf/gi) ? 'css/print/pdf.css' : 'css/print/paper.css';
+        document.getElementsByTagName('head')[0].appendChild(link);
+    </script>
+</head>
+<body>
+<div class="reveal">
+    <div class="slides">
+        <section>
+            <h2>Sipping Web Development from a Flask</h2>
+            <p>https://pheedloop.com/pyohio2017/#SAYxFZ</p>
+        </section>
+        <section>
+            <div id="left">
+                <b>Ian Zelikman</b>
+                <ul>
+                    <li>Python dev for 5+ years</li>
+                    <li>Backend web services</li>
+                    <br/>
+                    @izcoder<br/>
+                    ian.zelikman@gmail.com
+                </ul>
+            </div>
+            <div id="right">
+                <b>Brad Hurley</b>
+                <ul>
+                    <li>Python dev for 2+ years</li>
+                    <li>Database dev for 5+ years</li>
+                    <br/>
+                    @sqlBrad<br/>
+                    bradley.hurleyn@gmail.com
+                </ul>
+            </div>
+        </section>
+        <section>
+            <h1>Intro</h1>
+            <aside class="notes">
+                As you might have seen in one of the key notes in Pycon this year, Python is very diverse in it's
+                usages.<br/>
+
+                Me and Brad in our current role are mostly using Python for long running ETL processes and data science,
+                Earlier this year though we had an opportunity to develop a web application that will be used
+                internally.<br/>
+
+                We decided to use Python that we know and like in order to develop this application and wanted to share
+                the experience with other developers that might not use Python for web development. Or developers that
+                use
+                other frameworks and want to get an idea of how it looks in Flask.
+            </aside>
+        </section>
+        <section>
+            <h4>Why Flask</h4>
+            <ul>
+                <li>Micro framework</li>
+                <li>Extensions</li>
+                <li>Jinja2</li>
+                <li>Team preference</li>
+            </ul>
+            <aside class="notes">
+                Python has some great web frameworks to choose some and each one has some unique advantages.
+                As we knew we wanted to use Python for this project Flask was a great fit due to several reasons:
+                <ul>
+                    <li>Some members in the team had very basic familiarity with it</li>
+                    <li>It is based on Jinja2 that we use in our other projects</li>
+                    <li>It is a micro-framework and very easy to get up and running. Which also leads to a very fast
+                        learning curve
+                    </li>
+                    <li>
+                        It has many extensions so for example you are not limited to a specific ORM, as we knew our DB
+                        connection
+                        challenges might be unique we wanted flexibility on that.
+                    </li>
+                </ul>
+                These are reasons that led us to choose Flask but if you are looking into a new web dev project you
+                should look at a few frameworks to see what fits you.
+            </aside>
+        </section>
+        <section>
+            <h4>Basic Application</h4>
+            <section>
+                        <pre><code data-trim data-noescape>
+                            from flask import Flask
+                            import json
+                            import requests
+                            import os
+
+                            API_KEY = os.environ['GOOGLE_API_KEY']
+                            CX_ID = os.environ['CX_ID']
+                            app = Flask(__name__)
+                        </code></pre>
+                <aside class="notes">
+                    One of the nice things about Flask is that you can start with a basic application
+                    contained in one file and grow it from there<br/>
+                    We will show a simple example like this with an application that queries PyPI
+                    and grow it from there<br/>
+                    Let us look at the code here.. At first we see the imports
+                    including the Flask object.<br/>
+                    We define some values we need for the functionality..<br/>
+                    in order to query the API that are saved in the environment as you
+                    should always do in order not to hard code sensitive data.<br/>
+                    Using the Flask object we actually initialize our application object and using
+                    the __name__ is the standard way to do it.<br/>
+                </aside>
+            </section>
+            <section>
+                         <pre><code data-trim data-noescape style="max-height:700px">
+                             @app.route("/")
+                             def search():
+                                 search_url = \
+                                    "https://www.googleapis.com/customsearch/v1"
+                                 params = {'key': API_KEY, 'cx': CX_ID, 'q': 'flask'}
+                                 r = requests.get(search_url, params=params)
+                                 response = r.content.decode('utf-8')
+                                 result = json.loads(response)
+
+                                 return result['items'][1]['formattedUrl'], 200
+                         </code></pre>
+                <aside class="notes">
+                    once we have an application object we can actually define our application for example
+                    as here we are defining one route that is served on the root and using the route decorator
+                    this is how we are telling flask we want this route to be handled by this logic.<br/>
+                    You will see flask makes a lot of use with decorators.<br/><br/>
+
+                    The actual logic is always query google API in order to find the results for "flask"
+                    on the specific engine we defined that is searching in PyPI.<br/><br/>
+
+                    We are returning the url of the result and setting return code of 200. We explicitly defined the 200
+                    status code to demonstrate a return code but this is also the default code that is returned if no
+                    code is specified.<br/><br/>
+
+                    And this demonstrates how you write very simple kind of "Hello, world" app with Flask.
+                    But yet still you can see it already has some functionality and it is also confined in one
+                    file.<br/>
+                </aside>
+            </section>
+        </section>
+        <section>
+            <h2>WSGI</h2>
+            <section>
+                <h3>PEP-3333</h3>
+                <aside class="notes">
+                    Web Server Gateway Interface<br/>
+                    If this is your first introduction to web development in Python
+                    you probably will hear more and more about WSGI. This is why I feel this is something that is worth
+                    taking the time to
+                    understand. And even experienced web devs will have the ability to have a refresher.<br/><br/>
+
+                    This is basically a PEP (Python Enhancement Proposal).<br/>
+                    It is meant to define a specification for the communication that will happen between the server or
+                    and the
+                    web framework or application.<br/>
+                    WSGI also supports adding a middleware application into your stack. The middleware can serve
+                    different needs
+                    for example doing some custom processing. While the middleware still stays agnostic to the server or
+                    application.
+                    This way your application can be used with different web servers with little to no changes and a
+                    middleware you wrote
+                    can be used by different applications.<br/>
+
+                    Why this is great? Because there is standard way to build a web server and for it to interact with
+                    the framework.
+                    Then the framework (hopefully) providers a very simple API for us as the web developers to work with
+                    and focus on the
+                    application development/logic.<br/>s
+
+                    For more information you can go to <b>wsgi.readthedocs.io</b>
+                </aside>
+            </section>
+            <section>
+                <h2>WSGI Server</h2>
+                <aside class="notes">
+                    For a production ready application you will need to choose a WSGI server to run your application.
+                    There several options for a production ready WSGI server to choose from.
+                    Two main ones we considered were: gUnicorn, uWSGI.<br/>
+
+                    Gunicorn ‘Green Unicorn’ is a Python WSGI HTTP Server for UNIX.
+                    It’s a pre-fork worker model ported from Ruby’s Unicorn project.<br/>
+
+                    uWSGI on the other hand is a much more broad project that aims at developing full stack for
+                    building hosting services.
+                    You can develop application server using a common API and common configuration style.<br/>
+                    Thanks to its pluggable architecture it can be extended to support more platforms and
+                    languages such as c, c++, ruby and Go.<br/>
+                    The name uWSGI is confusing as it supports more than WSGI and it is because WSGI was the first
+                    plugin developed to
+                    support WSGI.<br/><br/>
+
+                    For me the main consideration is ease of use as both of them are similar in performance,
+                    and this is not the area you want to optimize anyway.<br/>
+                    Both are pip installable and can be run in a similar way.<br/>
+                    For our project we chose gUnicorn as it is a more light weight vs uWSGI can be more overwhelming at
+                    first with
+                    how much configuration flags can be used with it.<br/>
+                    For project that might have more challenges not seen upfront or more complex, especially trying to
+                    run multiple applications from one server would use uWSGI.<br/>
+                </aside>
+            </section>
+        </section>
+        <section>
+            <h2>Serving The Application</h2>
+            <section>
+                <pre><code data-trim data-noescape>
+                    export FLASK_APP=app.py
+                    flask run
+                </code></pre>
+
+
+                <aside class="notes">
+                    This is the most simple and basic way to run a flask app right now with
+                    the flask WSGI server that comes when installing Flask and mainly used
+                    for debugging purposes. This is very nice for local debugging but notice,
+                    things to note here:
+                    <ol>
+                        <li>
+                            If there are syntax errors in app.py file you won't get an error but
+                            you will just get a cryptic message saying that app.py is not on the path.
+                        </li>
+                        <li>
+                            This is single process and can only serve one request at a time, if your
+                            application is doing interesting things like calling itself etc (for example
+                            in micro services architecture) then you will have to work around that.
+                        </li>
+                    </ol>
+                </aside>
+            </section>
+            <section>
+                <pre><code data-trim data-noescape>
+                    gunicorn --bind=:8080 --workers=4 APP_MODULE
+                </code></pre>
+                <aside class="notes">
+                    As I mentioned we are using gUnicorn and this is the way you will run it in production.<br/>
+                    The options on the command line are very simple as you see your application is listenning
+                    on port 8080.
+                    You have 4 worker processes that are serving requests coming to the application,
+                    and the only argument supplied to the application is the module containing the
+                    application object.
+                </aside>
+            </section>
+        </section>
+        </section>
+        <section>
+            <h2>Deployment</h2>
+            <section>
+                <pre><code data-trim data-noescape>
+                    python setup.py bdist_wheel
+                    twine upload dist/*
+                </code></pre>
+                <aside class="notes">
+                    Once you have an application you are ready to deploy and run in production
+                    you will need to package it.<br/><br/>
+
+                    Both for applications that are for internal use and available on the internet
+                    you might want to store them on local PyPI compliant server.<br/>
+                    These are commands you would run and upload a new version of your application.<br/>
+                    We are using Artifactory as it support PyPI repositories but there are many
+                    others and the same commands will work with them as well.
+                    The first command here is creating the wheel for the application and the second
+                    command is uploading it to PyPI "like" repository.
+                </aside>
+            </section>
+            <section>
+                        <pre><code data-trim data-noescape>
+                            virtualenv application-env-name
+                            pip install application-name
+                        </code></pre>
+                <aside class="notes">
+                    Once a new version has been uploaded we can run a process on our actual web
+                    server boxes in order to update our application.<br/>
+                    What you would usually do is recreate your virtual environment and then
+                    you will install it from your local PyPI repository. All you need to do is
+                    make sure that you are pointing to your local PyPI repository you want to install
+                    from.
+                </aside>
+            </section>
+        </section>
+        <section>
+            <section>
+                <h4>Complex Application</h4>
+                <aside class="notes">
+                    One of the advantages of Flask is it does not impose much of a structure you have to follow
+                    when building your application but that can also be a disadvantage when building
+                    large complex application.<br/><br/>
+
+                    cookie cutter is a great tool you can use in order to start your application
+                    and we got some ideas from a few cookiecutter projects that were out there but also
+                    customized it for our needs.<br/><br/>
+
+                    Main files:<br/><br/>
+
+                    readme.md - even when you have a small team working on the project it is a good idea
+                    to have get into a habit of having a readme file that describes the project.
+                    You can put there information about how the application is deployed and also
+                    development.<br/><br/>
+
+                    setup.py, MANIFEST.IN - Those are the files you need to define in order to deploy
+                    your package. They provide the instructions on how to build the package.<br/><br/>
+
+                    __init__.py, app.py - this is where we create the main application and
+                    initializing all that is needed for the outside application logic like
+                    define routes(blueprint), any extensions needed or hooks like for example
+                    perform actions before and after every requests.<br/>
+                    This is basically an extension of the one line we had before
+                    where we initialized the application now in a larger application it becomes
+                    more complex.<br/><br/>
+
+                    config.py - we can define a separate config class for each application.
+                    and have some logic in order to choose between them in there.<br/><br/>
+
+                    forms.py - subclasses of the FalskForm so that we will have
+                    automatic validation. As we didn't have many forms at first we kept it
+                    as one module but can be extended to directory..<br/><br/>
+
+                    Directories:<br/><br/>
+
+                    templates - Jinja2 templates that render the pages of the application<br/><br/>
+
+                    routes - define logic to process request and then call a service.<br/><br/>
+
+                    services - classes that do actual logic of the application<br/><br/>
+
+                    models - the ORM layer. We used SQLAlchemy but Flask does not enforce that.<br/>
+
+                    jobs - backend jobs that are done using APScheduler in order to support<br/>
+                    backend jobs.
+                </aside>
+                <img src="images/project_structure.png" width="55%">
+            </section>
+            <section>
+                <h4>Routes/View</h4>
+            <pre><code data-trim data-noescape>
+                import json
+                import requests
+                import flask
+                from flask_demo.constants import API_KEY, CX_ID
+
+                blueprint = flask.Blueprint('search', __name__)
+
+                @blueprint.route('/search')
+                def search():
+                search_url = "https://www.googleapis.com/customsearch/v1"
+                params = {
+                'key': API_KEY,
+                'cx': CX_ID,
+                'q': 'flask'
+                }
+                r = requests.get(search_url, params=params)
+                response = r.content.decode('utf-8')
+                result = json.loads(response)
+
+                return result['items'][1]['formattedUrl'], 200
+            </code></pre>
+                <aside class="notes">
+                    Here is an example based off of the Flask application that Ian showed earlier.<br>
+                    The route is registered using flask blueprints.<br>
+
+                    The blueprints are registered when the application starts, and makes all of the routes
+                    accessible.<br>
+
+                    A Blueprint object works similarly to a Flask application object, but it is not actually an application.<br/>
+                    Rather it is a blueprint of how to construct or extend an application.<br/>
+
+                    The basic concept of blueprints is that they record operations to execute when registered on an application.<br/>
+                    Flask associates view functions with blueprints when dispatching requests and generating URLs from one endpoint to another.<br/>
+
+                    In this example we are not rendering a HTML template, but simply returning the content to the
+                    screen.<br>
+
+                    The return value of a route is typically what is referred to as a view.
+                </aside>
+            </section>
+            <section>
+                <h3>Search Results</h3>
+                <img src="images/search.png">
+                <aside class="notes">
+                    Its not really flashy, but we aren't real web developers yet, <br>
+                    and depending on your needs this could be sufficient.
+                </aside>
+            </section>
+            <section>
+                <h4>Search V2</h4>
+        <pre><code data-trim data-noescape>
+            @blueprint.route('/search_v2')
+            def search_v2():
+            search_url = "https://www.googleapis.com/customsearch/v1"
+            params = {
+            'key': API_KEY,
+            'cx': CX_ID,
+            'q': 'flask'
+            }
+            r = requests.get(search_url, params=params)
+            response = r.content.decode('utf-8')
+            result = json.loads(response)
+            return flask.render_template('search_results.html', results=result['items'])
+        </code></pre>
+                <aside class="notes">
+                    Version 2 is the enhanced version of previous slide.<br>
+                    <br>
+                    This example is nearly identical to the previous example except we are now rendering an HTML
+                    document,<br>
+                    and not limiting the results to the first item.<br>
+
+                </aside>
+            </section>
+            <section>
+                <h4>Search V2 Results</h4>
+                <img src="images/search_v2.png">
+                <aside class="notes">
+                    Here is an example of what the result set looks like using a very simple HTML table layout with
+                    Flask-Bootstrap extension.<br>
+                    With a little more formatting its possible we could pass as real web developers.
+                </aside>
+            </section>
+            <section>
+                <h2>Services</h2>
+                <aside class="notes">
+                    Services are typically called from the route and perform longer running or external
+                    functionality.<br>
+                    <br>
+                    A common example would be querying a database.
+                </aside>
+            </section>
+            <section>
+                <h4>Search V3 - With Service</h4>
+        <pre><code data-trim data-noescape>
+            import flask
+            from flask_demo.services.search import search_service
+
+            blueprint = flask.Blueprint('search_w_service', __name__)
+
+            @blueprint.route('/search_v3')
+            def search():
+            results = search_service()
+            return flask.render_template('search_results.html', results=results, version=3)
+        </code></pre>
+                <aside class="notes">
+                    In this example we have move the search functionality to its own service.<br>
+                    The flow is user hits the endpoint.<br>
+                    The route calls the service.<br>
+                    The service returns data to the route.<br>
+                    The route returns data and the html is rendered.<br>
+                </aside>
+            </section>
+            <section>
+                <h4>
+                    Search V3 - Service
+                </h4>
+        <pre><code data-trim data-noescape>
+            import requests
+            import json
+            from flask_demo.constants import API_KEY, CX_ID
+
+            def search_service(query="Flask"):
+            search_url = "https://www.googleapis.com/customsearch/v1"
+            params = {
+            'key': API_KEY,
+            'cx': CX_ID,
+            'q': query
+            }
+            r = requests.get(search_url, params=params)
+            response = r.content.decode('utf-8')
+            result = json.loads(response)
+            return result['items']
+        </code></pre>
+                <aside class="notes">
+                    Here is how the search service is now structured.
+                    You can see in the above example the service is now responsible for executing the search results.
+                </aside>
+            </section>
+            <section>
+                <h3>Jinja Templates</h3>
+                <img src="images/jinja.png">
+                <aside class="notes">
+                    Jinja Templates are very simple and powerful to use.<br>
+                    Before the HTML is rendered the variables between curly braces are rendered.<br>
+                    You can use loops, conditional logic, apply filters, and even create and expose additional functions
+                    to jinja<br/>
+                    Other templating engines exist, but I personally really like working with Jinja
+                </aside>
+            </section>
+            <section>
+                <h2>Forms</h2>
+                <aside class="notes">
+                    WTForms and the Flask Extension Flask-WTF make it easier to create and consume data that is
+                    submitted through a web page.<br>
+                    Flaks Forms also allow you to do simple form validation by checking the configured validators.
+
+                </aside>
+            </section>
+            <section>
+                <h3>
+                    Search Form
+                </h3>
+                <img src="images/form_search.png">
+                <aside class="notes">
+                    Here is a simple search page that allows the user to query PyPI from our demo web site.<br>
+                    Additionally through the help of bootstrap this form looks somewhat presentable.
+
+                </aside>
+            </section>
+            <section>
+                <h3>
+                    Search Form - Results
+                </h3>
+                <img src="images/form_search_results.png">
+                <aside class="notes">
+                    Here is the search results for numpy.  If you look closely you might be able to see some code re-use happening.
+
+                </aside>
+            </section>
+            <section>
+                <h4>
+                    Simple Form
+                </h4>
+        <pre><code data-trim data-noescape>
+            import flask
+            from flask_demo.forms import SearchForm
+            from flask_demo.services.search import search_service
+
+            blueprint = flask.Blueprint('search_from_form', __name__)
+
+            @blueprint.route('/search_v4', methods=['GET', 'POST'])
+            def search():
+            form = SearchForm()
+            if flask.request.method == 'POST':
+            if not form.validate():
+            flask.flash("Invalid Search String", 'danger')
+            return flask.render_template('search.html', form=form)
+            search_value = flask.request.form['search_value']
+            results = search_service(search_value)
+            return flask.render_template('search_results.html', results=results, version=4)
+
+            else:
+            return flask.render_template('search.html', form=form)
+        </code></pre>
+                <aside class="notes">
+                    Here is how the route was implemented using the a search form, and the search service we created
+                    earlier.<br>
+                    If the request is a post request and the form is valid the search will be executed and the results
+                    displayed.
+                    <br>
+                    If the form is not valid a flask flask message will be displayed, and the search form will be
+                    displayed again.
+                    <br>
+                    and finally if the request is a get request the search form will be displayed to the user
+                </aside>
+            </section>
+            <section>
+                <h4>Form Validation</h4>
+            <pre><code data-trim data-noescape>
+                from flask_wtf import FlaskForm
+                from wtforms import StringField
+                from wtforms import SubmitField
+                from wtforms.validators import DataRequired
+                from wtforms.validators import Length
+
+                class SearchForm(FlaskForm):
+                search_value = StringField('search_value', validators=[DataRequired(), Length(1, 20)])
+                submit = SubmitField('search')
+            </code></pre>
+                <aside class="notes">
+                    Here is the SearchForm Class I created for this demo.<br>
+                    You can see I have applied a few form validators.<br>
+                    Data must be present, and the length cant exceed 20 chars.<br>
+                </aside>
+            </section>
+            <section>
+                <h2>Application Configuration</h2>
+                <aside class="notes">
+                    Application Configuration can be tricky, but a solution that we found worked really well was reading
+                    our application configuration files in using environment variables.<br>
+                    <br>
+                    This allowed us to dynamically on the fly roll out new configurations without recycling the
+                    application.<br/>
+                </aside>
+            </section>
+        </section>
+        <section>
+            <section>
+                <h2>Databases</h2>
+                <aside class="notes">
+                    Pretty much all web applications will have a need to communicate with a database.<br>
+                    One of the advantages of using Flask is that you're free to go about solving that issue as you see
+                    fit.<br>
+                    <br>
+                    Some Common Database Platforms To Consider<br/>
+                    MySQL<br/>
+                    Postgres<br/>
+                    SQLite<br/>
+                    The database that you pick and the ORM that best fits your needs will likely be tailored to the
+                    purpose of your application.<br>
+                    An object-relational mapper (ORM) is a code library that automates the transfer of data stored
+                    in<br>
+                    relational databases tables into objects that are more commonly used in application code.<br>
+                </aside>
+            </section>
+            <section>
+                <h2>ORMS</h2>
+                <ul>
+                    <li>SQLAlchemy</li>
+                    <li>Peewee</li>
+                    <li>The Django ORM</li>
+                    <li>PonyORM</li>
+                    <li>SQLObject</li>
+                </ul>
+                <aside class="notes">
+                    Here is a list of common ORMs available.<br/>
+                    SQLAlchemy - Just Right<br/>
+                    Peewee - Smaller more hackable version of SQLAlchemy<br/>
+                    Django - Baked into Django. Difficult to replace.<br/>
+                    Pony - Apache 2.0 Open Source<br/>
+                    SQLObject - Active Dev Since 2003<br/>
+                    Each ORM has its strength's and weaknesses and I would encourage anyone thinking about implementing
+                    one to do some research.
+                </aside>
+            </section>
+            <section>
+                <img src="images/ORM.png">
+                <aside class="notes">
+                    Here is a graphic that shows a simple example of what an ORM is going to do.<br/>
+                    Rows to Objects.
+                </aside>
+            </section>
+            <section>
+                <img src="images/sqlalchemy.jpg">
+                <aside class="notes">
+                    Ian and I chose to implement our solution using SQLAlchemy due to its documentation and
+                    support.<br/>
+                    In the research phase of our Flask Application I quickly learned that most people felt that
+                    SQLAlchemy
+                    achieved the right balance of abstraction and ease of use.
+                </aside>
+            </section>
+            <section>
+                <h4>Models</h4>
+    <pre><code data-trim data-noescape>
+        from flask_demo.extensions import db
+
+        class User(db.Model):
+        id = db.Column(db.Integer, primary_key=True)
+        username = db.Column(db.String(80), unique=True)
+        email = db.Column(db.String(120), unique=True)
+    </code></pre>
+                <aside class="notes">
+                    SQLAlchemy database models are a very simple and powerful way to express database objects as
+                    classes.<br>
+                    Additionally you can specify metadata about the object in the model definition.<br> For example
+                    you can specify the database schema that the table lives in as well as the bind key so you can
+                    interact
+                    with multiple databases at the same time.<br>
+
+                    In the application that Ian and I worked on we had the requirement to be able to connect to multiple
+                    different database cluster at the same time.<br/>
+                    For Example we might have a users tables in Production, Hot Stand-by, QA, and Development
+                    Environments
+                    and have the need to query all environments at the same time.
+                </aside>
+            </section>
+            <section>
+                <h3>Query Syntax</h3>
+                <br>
+        <pre><code data-trim data-noescape>
+            results = user.query.filter(user.username.ilike(user_name)).all()
+        </code></pre>
+                <aside class="notes">
+                    This SQLAlchemy query uses the user model that we defined in the previous slide and returns all the
+                    rows
+                    based on a case insensitive compare to the input user_name.<br/>
+                    The syntax is very easy to use, but it can quickly become verbose as the complexity of your query
+                    grows.
+                </aside>
+            </section>
+        </section>
+        <section>
+            <section>
+                <h2>
+                    Cache
+                </h2>
+                <img src="images/cache_money.gif">
+                <aside class="notes">
+                    The joke between cash money and computer cache has been made numerous times, but in reality its not
+                    really a joke.
+                    <br/>
+                    Adding caching to your Flask application can save you time and money on development effort.
+                    <br/>
+                    Hopefully some of you had a chance to attend the talk by Ernest Durbin about maintaining PYPI and
+                    the impact caching had.
+                    <br/>
+                    Like most things with Flask you have lots of options.
+                </aside>
+            </section>
+            <section>
+                <h2>Flask-Cache</h2>
+                <ul>
+                    <li>NullCache</li>
+                    <li>SimpleCache</li>
+                    <li>MemcachedCache</li>
+                    <li>GAEMemcachedCache</li>
+                    <li>Redis</li>
+                    <li>FileSystem</li>
+                    <li>SASLMemcachedCache</li>
+                </ul>
+                <aside class="notes">Flask-Cache is cache extensions that supports all of the cache implementations
+                    listed above.<br>
+                    The documentation is very thorough and configuration was very simple.<br/>
+                    Ian and I implemented the FileSystem Cache.<br/>
+                    The Cache solution you choose to implement will be determined by your specific application needs.
+                    <br/>
+                    For example if your application sits behind a load balancer you will likely want to consider a cache
+                    solution <br/>
+                    that is distributed over a simple File System Cahce where the cache location is local to the
+                    application.<br>
+
+                    Make sure you understand what you are caching and determine if you need to include a way to
+                    invalidate the cache.<br/>
+                    Caching can lead to a better user experience, but it can also lead to scenarios that you are serving
+                    stale data.
+                </aside>
+
+            </section>
+            <section>
+                <h4>Cache Usage</h4>
+    <pre><code data-trim data-noescape>
+        @cache.cached(timeout=50)
+        def index():
+        return render_template('index.html')
+
+        class Person(db.Model):
+        @cache.memoize(50)
+        def has_membership(self, role_id):
+        return Group.query.filter_by(user=self, role_id=role_id).count() >= 1
+    </code></pre>
+                <aside class="notes">
+                    Here are some examples of the two ways you typically implement cache using one of the two
+                    decorators.<br>
+                    cached is most helpful when you need to cache a mostly static page.<br>
+                    I will have a brief live demo of caching<br/>
+
+                    memoize is used on methods that accept parameters and that way the cache is created based on the
+                    input parameters to the method.<br>
+
+                    The timeout is specified in seconds.<br>
+
+                    <br>
+                    Ian and I encountered several mostly static pages that were driven by a database query, and
+                    implementing caching significantly improved the performance of the site.
+                    In our case some of the data was updated night during some batch processing so we created a backend
+                    job to pre-warm the cache and set the cache to expire in 24 hours
+                    to eliminate the need for calls to the database.
+                    <br/>
+                    <br/>
+
+                </aside>
+            </section>
+            <section>
+                <h2>Cache Demo</h2>
+                <img src="images/demo.jpg">
+            </section>
+        </section>
+        <section>
+            <h1>Questions</h1>
+            <h3>Demo App</h3>
+            <p>https://github.com/bradleyhurley/pyohio_flask_demo</p>
+            <aside class="notes">
+                Here is the URL where you can find the sample flask app that was used to generate all of the screen
+                shots.<br/>
+            </aside>
+        </section>
+    </div>
+</div>
+
+<script src="lib/js/head.min.js"></script>
+<script src="js/reveal.js"></script>
+
+<script>
+    // More info https://github.com/hakimel/reveal.js#configuration
+    Reveal.initialize({
+        history: true,
+
+        // More info https://github.com/hakimel/reveal.js#dependencies
+        dependencies: [
+            {src: 'plugin/markdown/marked.js'},
+            {src: 'plugin/markdown/markdown.js'},
+            {src: 'plugin/notes/notes.js', async: true},
+            {
+                src: 'plugin/highlight/highlight.js', async: true, callback: function () {
+                hljs.initHighlightingOnLoad();
+            }
+            }
+        ]
+    });
+</script>
+</body>
+</html>
